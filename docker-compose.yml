@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14
+    container_name: shoestore_db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - shoestore_net
+
+  app:
+    build: .
+    container_name: shoestore_app
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: myuser
+      DB_PASSWORD: pass
+      DB_NAME: postgres
+    networks:
+      - shoestore_net
+
+volumes:
+  pgdata:
+
+networks:
+  shoestore_net:

@@ -19,9 +19,9 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			shoes.GET("", controllers.GetShoes)
 			shoes.GET("/:id", controllers.GetShoe)
-			shoes.POST("", controllers.CreateShoe)
-			shoes.PUT("/:id", controllers.UpdateShoe)
-			shoes.DELETE("/:id", controllers.DeleteShoe)
+			shoes.POST("", middleware.RoleMiddleware("ADMIN"), controllers.CreateShoe)
+			shoes.PUT("/:id", middleware.RoleMiddleware("ADMIN"), controllers.UpdateShoe)
+			shoes.DELETE("/:id", middleware.RoleMiddleware("ADMIN"), controllers.DeleteShoe)
 		}
 
 	}

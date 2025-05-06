@@ -12,7 +12,6 @@ func main() {
 
 	// Подключение к базе данных
 	database.ConnectDatabase()
-	database.RunMigrations()
 
 	// Настройка маршрутов
 	routes.SetupRoutes(r)

@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"shoe-store/database"
+	"shoe-store/middleware"
 	"shoe-store/models"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +17,25 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), 14)
-	user := models.User{Username: input.Username, Password: string(hashedPassword)}
+	// Проверка на уникальность
+	var existing models.User
+	if err := database.DB.Where("username = ?", input.Username).First(&existing).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Пользователь уже существует"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при шифровании пароля"})
+		return
+	}
+
+	// Можно задать роль по умолчанию, например "user"
+	user := models.User{
+		Username: input.Username,
+		Password: string(hashedPassword),
+		Role:     "user",
+	}
 
 	database.DB.Create(&user)
 
@@ -34,7 +52,6 @@ func Login(c *gin.Context) {
 	}
 
 	database.DB.Where("username = ?", input.Username).First(&user)
-
 	if user.ID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Пользователь не найден"})
 		return
@@ -46,5 +63,15 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Вход выполнен успешно"})
+	// Генерация JWT
+	token, err := middleware.GenerateJWT(user.ID, user.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Не удалось создать токен"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Вход выполнен успешно",
+		"token":   token,
+	})
 }
